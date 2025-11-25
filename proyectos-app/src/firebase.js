@@ -10,6 +10,14 @@ import {
   connectFunctionsEmulator,
   httpsCallable,
 } from "firebase/functions";
+import {
+  getAuth,
+  connectAuthEmulator // Importar connectAuthEmulator
+} from "firebase/auth";
+import {
+  getStorage,
+  connectStorageEmulator // Importar connectStorageEmulator
+} from "firebase/storage";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -27,12 +35,10 @@ const app = initializeApp(firebaseConfig);
 // inicializa servicios
 export const bd = getFirestore(app);
 export const funciones = getFunctions(app, "us-central1");
+export const auth = getAuth(app); // Exportar la instancia de Auth
+export const storage = getStorage(app); // Exportar la instancia de Storage
 
-// conecta a emuladores
-if (location.hostname === "localhost") {
-  connectFirestoreEmulator(bd, "127.0.0.1", 8080);
-  connectFunctionsEmulator(funciones, "127.0.0.1", 5001);
-}
+// conecta a emuladores (eliminado para usar la nube directamente)
 
 // funcion oncall del backend
 export async function llamarEliminarPorId(coleccion, id) {

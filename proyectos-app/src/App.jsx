@@ -1,48 +1,78 @@
-// proyectos-app/src/App.jsx
-import { useState } from "react";
-import axios from "axios";
-import { bd, llamarEliminarPorId } from "./firebase";
-import { collection, addDoc, getDocs } from "firebase/firestore";
+import { useState, useEffect } from "react";
+import { auth } from "./firebase";
+import { onAuthStateChanged } from "firebase/auth";
+import ProductList from "./components/ProductList";
+import ContactForm from "./components/ContactForm";
+import Auth from "./components/Auth";
+import StorageUploader from "./components/StorageUploader";
 
-export default function App() {
-  const [ultimaId, setUltimaId] = useState(null);
-  const refProyectos = collection(bd, "projects"); // coleccion de prueba
+function App() {
+  const [carrito, setCarrito] = useState([]);
+  const [usuario, setUsuario] = useState(null);
+  const [cargandoAuth, setCargandoAuth] = useState(true); // Para saber si estamos comprobando el estado de auth
 
-  // agrega un documento y enriquece datos con axios antes de guardar
-  const agregarProyecto = async () => {
-    const resp = await axios.get("https://jsonplaceholder.typicode.com/todos/1");
-    const docRef = await addDoc(refProyectos, {
-      nombre: "mi proyecto",
-      descripcion: "descripcion de prueba con al menos 10 caracteres",
-      infoExtra: resp.data?.title || "sin datos",
-      creadoEn: new Date().toISOString(),
+  useEffect(() => {
+    // Este observador se ejecuta cuando el estado de autenticación cambia
+    const unsubscribe = onAuthStateChanged(auth, (usuarioActual) => {
+      setUsuario(usuarioActual);
+      setCargandoAuth(false); // Dejamos de cargar una vez que tenemos el estado
     });
-    setUltimaId(docRef.id);
-    alert("guardado: " + docRef.id);
+    // Limpiar el observador al desmontar el componente
+    return () => unsubscribe();
+  }, []);
+
+  const agregarAlCarrito = (producto) => {
+    setCarrito([...carrito, producto]);
   };
 
-  // lista cuantos documentos hay
-  const listarProyectos = async () => {
-    const snap = await getDocs(refProyectos);
-    alert("total proyectos: " + snap.size);
-  };
-
-  // llama a la function del emulador para borrar por id
-  const eliminarUltimo = async () => {
-    if (!ultimaId) return alert("no hay id para borrar");
-    await llamarEliminarPorId("projects", ultimaId);
-    alert("eliminado: " + ultimaId);
-    setUltimaId(null);
-  };
+  if (cargandoAuth) {
+    return <div className="container mt-4 text-center"><h2>Cargando...</h2></div>;
+  }
 
   return (
-    <div style={{ padding: 24 }}>
-      <h1>prueba con emuladores</h1>
-      <p>botones para probar firestore y functions en local</p>
-      <button onClick={agregarProyecto}>agregar proyecto</button>{" "}
-      <button onClick={listarProyectos}>listar proyectos</button>{" "}
-      <button onClick={eliminarUltimo}>eliminar ultimo</button>
-      <p>id reciente: {ultimaId ?? "(ninguno)"} </p>
+    <div className="container mt-4">
+      <header className="text-center mb-4">
+        <h1 className="display-4">Nuestra Tienda</h1>
+        <p className="lead">Bienvenido a la tienda de componentes de React.</p>
+      </header>
+      <main className="row">
+        <div className="col-lg-8">
+          <ProductList agregarAlCarrito={agregarAlCarrito} />
+          <hr/>
+          <ContactForm />
+        </div>
+        <aside className="col-lg-4">
+          <Auth usuario={usuario} />
+          <hr/>
+          <div className="card mb-4">
+            <div className="card-body">
+              <h2 className="card-title">Carrito de Compras</h2>
+              {carrito.length === 0 ? (
+                <p>El carrito está vacío</p>
+              ) : (
+                <ul className="list-group">
+                  {carrito.map((item, index) => (
+                    <li key={index} className="list-group-item d-flex justify-content-between align-items-center">
+                      {item.nombre}
+                      <span className="badge bg-primary rounded-pill">${item.precio}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+          <hr/>
+          {usuario ? (
+            <StorageUploader usuario={usuario} />
+          ) : (
+            <div className="card p-3 text-center">
+              <p className="mb-0">Debes iniciar sesión para poder subir archivos.</p>
+            </div>
+          )}
+        </aside>
+      </main>
     </div>
   );
 }
+
+export default App;

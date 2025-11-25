@@ -84,7 +84,7 @@ const ContactForm = () => {
             {validator.current.message('mensaje', mensaje, 'required', { className: 'text-danger' })}
           </div>
           <button type="submit" className="btn btn-success">
-            Enviar a Firestore
+            Enviar
           </button>
         </form>
       </div>
